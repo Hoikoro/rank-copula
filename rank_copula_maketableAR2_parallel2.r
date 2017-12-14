@@ -27,7 +27,7 @@ cov.fun2 = function (theta,d){
 
 emp.cop = function(R1, R2){ # empirical copula
   n = length(R1)
-  if(n <= 1 || length(R2) != n) stop("aho")
+  if(n <= 1 || length(R2) != n) stop("size error")
   ec = matrix(0, n-1, n-1)
   s = 1:(n-1)
   for(t in 1:n){
@@ -139,7 +139,6 @@ cov = cov.fun1                    # generating covariance matrix
 n = dim(ranks)[1]                 # number of observation
 rankcnt = dim(ranks)[2]           #=factorial(n)
 
-#By symmetry, first data can be fixed.
 
 #opt = function(matx) optim(0,loglike,method = "L-BFGS-B",lower = -0.99, upper = 0.99, R = matx, cov.fun = cov)
 opt = function(matx)optimize(loglike, c(-0.99,0.99),maximum=FALSE, R = matx, cov.fun = cov.fun1)
