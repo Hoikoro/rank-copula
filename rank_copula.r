@@ -1,6 +1,6 @@
 # maximum rank likelihood estimator (MRLE)
 library(hgm)
-
+library(mvprpb)
 
 #generating covariance matrix
 cov.fun1 = function(th, d){ # AR(1) model (-1 < th < 1)
@@ -15,7 +15,7 @@ cov.fun1 = function(th, d){ # AR(1) model (-1 < th < 1)
 
 emp.copula = function(R1, R2){ # empirical copula
   n = length(R1)
-  if(n <= 1 || length(R2) != n) stop("aho")
+  if(n <= 1 || length(R2) != n) stop("size error")
   ec = matrix(0, n-1, n-1)
   s = 1:(n-1)
   for(t in 1:n){
@@ -26,7 +26,9 @@ emp.copula = function(R1, R2){ # empirical copula
 
 
 # hgm.ncorthant(x, y) # x: covariance, y: mean, output: int_{t>0} phi_d(t|x,y) dt
+
 loglike = function(R, theta, cov){
+  # R: n*d matrix, R[i,j] is the rank of the i-th data in j-th variable
   n = dim(R)[1]
   d = dim(R)[2]
   S = solve(cov(theta,d))
@@ -47,9 +49,10 @@ loglike = function(R, theta, cov){
   x=(x+t(x))/2
   y = rep(0, (n-1)*d)
   phgm=hgm.ncorthant(x, y)
-  prpb=as.numeric(mvorpb(length(y),y,x,2000,6))
-  nc = prpb * det(x)^(1/2)
+  #prpb=as.numeric(mvorpb(length(y),y,x,2000,6))
+  nc = phgm * det(x)^(1/2)
   ll = (n-1)/2*log(det(S)) - d/2*log(n)
+  if (nc<0) nc=(1e-10)* det(x)^(1/2)
   ll + log(nc)
 }
 
@@ -68,7 +71,6 @@ grid = seq(-0.99,0.99,by=0.01)    # variable1
 
 m=rankcnt                         # number of different rank functions
 
-#by symmetry, first data can be fixed.
 
 log_likelihood=rep(0,length(dataset))
 for(i in 1:length(log_likelihood)){
