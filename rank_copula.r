@@ -26,39 +26,33 @@ emp.copula = function(R1, R2){ # empirical copula
 
 
 # hgm.ncorthant(x, y) # x: covariance, y: mean, output: int_{t>0} phi_d(t|x,y) dt
-loglike = function(R, th, cov.fun){
-  # R: n*d matrix, R[i,j] is the rank of the i-th data in j-th variable
-  n = nrow(R)
-  d = ncol(R)
-  S = solve(cov.fun(th, d))
-  ll = (n-1)/2*log(det(S)) - d/2*log(n)
-
-  BB = array(0, c(n-1, d, n-1, d))
-  q = (1:(n-1))/n
-  for(i in 1:d){
-    for(j in 1:d){
-      ec = emp.copula(R[,i], R[,j])
-      BB[,i,,j] = S[i,j] * n * (ec - outer(q, q))
+loglike = function(R, theta, cov){
+  n = dim(R)[1]
+  d = dim(R)[2]
+  S = solve(cov(theta,d))
+  B=matrix(0, (n-1)*d,(n-1)*d)
+  for(r in 1:(n-1)){
+    for(i in 1:d){
+      for(s in 1:(n-1)){
+        for(j in 1:d){
+          for(t in 1:n){
+            B[(r-1)*d+i,(s-1)*d+j]=B[(r-1)*d+i,(s-1)*d+j]+(sum(R[,i]<=R[t,i])<=r)*(sum(R[,j]<=R[t,j])<=s)
+          }
+          B[(r-1)*d+i,(s-1)*d+j]= S[i,j]*(B[(r-1)*d+i,(s-1)*d+j] - r*s/n)
+        }
+      }
     }
   }
-
-  BBmat = matrix(0, (n-1)*d, (n-1)*d)
-  for(i in 1:d){
-    for(j in 1:d){
-      sub1 = (n-1)*(i-1) + (1:(n-1))
-      sub2 = (n-1)*(j-1) + (1:(n-1))
-      BBmat[sub1, sub2] = BB[,i,,j]
-    }
-  }
-  x = solve(BBmat)
-  x = (x + t(x)) / 2
+  x=solve(B)
+  x=(x+t(x))/2
   y = rep(0, (n-1)*d)
-  nc = hgm.ncorthant(x, y) * det(x)^(1/2)
-
+  phgm=hgm.ncorthant(x, y)
+  prpb=as.numeric(mvorpb(length(y),y,x,2000,6))
+  nc = prpb * det(x)^(1/2)
+  ll = (n-1)/2*log(det(S)) - d/2*log(n)
   ll + log(nc)
 }
 
-#d = 4      # dimension of copula
 ranks = cbind(c(1,2,3,4),c(1,2,4,3),c(1,3,2,4),c(1,3,4,2),c(1,4,2,3),c(1,4,3,2),
                c(2,1,3,4),c(2,1,4,3),c(2,3,1,4),c(2,3,4,1),c(2,4,1,3),c(2,4,3,1),
                c(3,1,2,4),c(3,1,4,2),c(3,2,1,4),c(3,2,4,1),c(3,4,1,2),c(3,4,2,1),
